@@ -63,6 +63,12 @@ def run(date):
     print date
     start = datetime.utcnow()
     date = datetime.strptime(date,'%Y-%m-%d %H:%M:%S')
+    if os.path.exists(
+            BASE_LOCATION+'{}/satelite_{}.jpg'.format(
+                date.strftime('%Y_%m_%d'),
+                str(date))
+            ):
+        return
     base_url = '/'.join([
         BASE_URL, ZOOM_LEVELS[ZOOM][1], str(WIDTH),
         date.strftime('%Y'),
@@ -118,12 +124,12 @@ def updateGnome(filename, date):
 
 
 def create_video(date):
-    #ffmpeg -pattern_type glob -i '*.jpg' -s 3840x2160 -r 8 movie.mp4
+    os.system('''ffmpeg -pattern_type glob -i '*.jpg' -s 3840x2160 -r 8 movie.mp4''')
     pass
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        get_all(get_latest(), 2)
+        get_all(get_latest(), int(sys.argv[1]))
     else:
         run( get_latest() )
