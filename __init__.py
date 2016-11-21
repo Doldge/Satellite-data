@@ -32,7 +32,6 @@ def get_latest():
 def get_all(end, days = 1):
     end = datetime.strptime(end,'%Y-%m-%d %H:%M:%S')
     start = end - timedelta(days = days)
-    start = datetime.strptime('2016-02-13 06:00:00', '%Y-%m-%d %H:%M:%S')
     while start < end:
         run(str(start))
         start = start + timedelta(minutes = 10)
