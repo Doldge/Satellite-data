@@ -1,7 +1,8 @@
 #! /usr/bin/python
 
 #import requests
-import urllib
+#import urllib
+import urllib2 as urllib
 from datetime import datetime, timedelta
 import json
 from PIL import Image
@@ -25,7 +26,7 @@ images = list()
 
 
 def get_latest():
-    response = urllib.urlopen(BASE_URL+'/latest.json').read()
+    response = urllib.urlopen(BASE_URL+'/latest.json', timeout=20).read()
     return json.loads(response)['date']
 
 
@@ -47,8 +48,8 @@ def worker(base_url):
             try:
                 response = cStringIO.StringIO(\
                         urllib.urlopen(
-                        base_url+'_'+tile['name']
-                ).read() )
+                        base_url+'_'+tile['name'],
+                timeout=45).read() )
             except Exception as e:
                 print e
                 grid.put(tile)
