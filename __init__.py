@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import json
 from PIL import Image
 import cStringIO
-import os, sys
+import os, sys, os.path
 import Queue
 from threading import Thread
 from subprocess import Popen
@@ -101,8 +101,11 @@ def stitch(date):
     result_height = images[0]['image'].size[1] * ZOOM_LEVELS[ZOOM][0]
     result = Image.new('RGB', (result_width, result_height) )
     for image in images:
-        result.paste(im = image['image'], box = ( image['image'].size[0] *
-        image['x'], image['image'].size[1] * image['y'] ))
+        try:
+            result.paste(im = image['image'], box = ( image['image'].size[0] *
+            image['x'], image['image'].size[1] * image['y'] ))
+        except Exceptiion as e:
+            print('Exception occurred: {}'.format(str(e)))
     images = list()
 
     filename = 'satelite_{}.jpg'.format(str(date))
@@ -129,7 +132,14 @@ def create_video(date):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        get_all(get_latest(), int(sys.argv[1]))
-    else:
-        run( get_latest() )
+    if os.path.exists('/tmp/sat_data.lock'):
+        print('already Running')
+        sys.exit(1)  # already running
+    open('/tmp/sat_data.lock','a').close()
+    try:
+        if len(sys.argv) > 1:
+            get_all(get_latest(), int(sys.argv[1]))
+        else:
+            run( get_latest() )
+    finally:
+        os.remove('/tmp/sat_data.lock')
