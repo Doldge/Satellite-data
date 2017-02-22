@@ -9,9 +9,13 @@ from PIL import Image
 import cStringIO
 import os, sys, os.path
 import Queue
-from threading import Thread
+from threading import Thread, current_thread
 from subprocess import Popen
 from shlex import split
+import logging
+
+logging.basicConfig(format='%(asctime)s\t%(levelname)s:\t%(message)s', level=logging.DEBUG)
+
 
 BASE_URL = 'http://himawari8-dl.nict.go.jp/himawari8/img/'
 BASE_URL += 'D531106'
@@ -51,7 +55,7 @@ def worker(base_url):
                         base_url+'_'+tile['name'],
                 timeout=45).read() )
             except Exception as e:
-                print e
+                logging.exception('worker[{}] failed:'.format(current_thread()))
                 grid.put(tile)
                 continue
             tile['image'] = Image.open(response)
@@ -60,7 +64,7 @@ def worker(base_url):
 
 
 def run(date):
-    print date
+    logging.info(date)
     start = datetime.utcnow()
     date = datetime.strptime(date,'%Y-%m-%d %H:%M:%S')
     if os.path.exists(
@@ -68,6 +72,8 @@ def run(date):
                 date.strftime('%Y_%m_%d'),
                 str(date))
             ):
+        logging.info('file [{}{}/satelite_{}.jpg] already exists'.format(
+        BASE_LOCATION, date.strftime('%Y_%m_%d'), str(date)))
         return
     base_url = '/'.join([
         BASE_URL, ZOOM_LEVELS[ZOOM][1], str(WIDTH),
@@ -91,7 +97,8 @@ def run(date):
         t.start()
 
     grid.join()
-    print 'Retrieved %d images in %s seconds' % ( len(images), str((datetime.utcnow()-start).total_seconds()))
+    logging.info( 'Retrieved %d images in %s seconds' % ( len(images),
+    str((datetime.utcnow()-start).total_seconds())))
     stitch(date)
 
 
@@ -105,7 +112,7 @@ def stitch(date):
             result.paste(im = image['image'], box = ( image['image'].size[0] *
             image['x'], image['image'].size[1] * image['y'] ))
         except Exceptiion as e:
-            print('Exception occurred: {}'.format(str(e)))
+            logging.exception('Exception occurred: {}'.format(str(e)))
     images = list()
 
     filename = 'satelite_{}.jpg'.format(str(date))
@@ -120,7 +127,7 @@ def stitch(date):
 
 def updateGnome(filename, date):
     if date == datetime.strptime(get_latest(), '%Y-%m-%d %H:%M:%S'):
-        print 'Updating desktop'
+        logging.info( 'Updating desktop')
         a = Popen('. ~/.dbus/session-bus/* && gsettings set org.gnome.desktop.background picture-uri "file://{}"'.format(filename),
         shell = True)
         a.communicate()
@@ -133,7 +140,7 @@ def create_video(date):
 
 if __name__ == '__main__':
     if os.path.exists('/tmp/sat_data.lock'):
-        print('already Running')
+        logging.info('already Running')
         sys.exit(1)  # already running
     open('/tmp/sat_data.lock','a').close()
     try:
